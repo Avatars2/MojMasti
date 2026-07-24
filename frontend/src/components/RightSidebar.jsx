@@ -49,68 +49,147 @@ const RightSidebar = () => {
     })
 
     return (
-        <div className='w-full h-screen overflow-y-auto p-6 bg-white'>
-            <div className='mb-8 sticky top-0 bg-white z-10'>
-                <div className='relative'>
-                    <Search size={18} className='absolute left-3 top-3 text-gray-400' />
-                    <Input
+        <div className='scrollbar-hide' style={{ width: '100%', height: '100vh', overflowY: 'auto', paddingTop: '24px', paddingLeft: '8px' }}>
+            {/* Search Bar */}
+            <div style={{ marginBottom: '28px' }}>
+                <div style={{ position: 'relative' }}>
+                    <Search
+                        size={16}
+                        style={{
+                            position: 'absolute',
+                            left: '14px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#a1a1aa',
+                        }}
+                    />
+                    <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search users..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className='pl-10 bg-gray-100 border-none focus-visible:ring-2 focus-visible:ring-pink-500 rounded-full'
+                        style={{
+                            width: '100%',
+                            paddingLeft: '40px',
+                            paddingRight: '16px',
+                            paddingTop: '10px',
+                            paddingBottom: '10px',
+                            background: '#f4f4f8',
+                            border: '1px solid transparent',
+                            borderRadius: '14px',
+                            fontSize: '13px',
+                            color: '#374151',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                            transition: 'all 0.2s ease',
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)'
+                            e.currentTarget.style.background = '#faf8ff'
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.08)'
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = 'transparent'
+                            e.currentTarget.style.background = '#f4f4f8'
+                            e.currentTarget.style.boxShadow = 'none'
+                        }}
                     />
                 </div>
             </div>
 
+            {/* Suggested Users */}
             <div>
-                <h3 className='text-lg font-bold text-gray-800 mb-4'>Suggested for you</h3>
-                <div className='space-y-4'>
+                <h3 style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#9ca3af',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '16px',
+                }}>
+                    Suggested for you
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {filteredUsers && filteredUsers.length > 0 ? (
                         filteredUsers.map((suggestedUser) => {
                             const isFollowing = (user?.following || []).map(String).includes(String(suggestedUser?._id))
                             return (
-                                <div key={suggestedUser?._id} className='flex items-center justify-between gap-2 hover:bg-gray-50 p-2 rounded-lg transition-colors'>
-                                    <Link to={`/profile/${suggestedUser?._id}`} className='flex items-center gap-2 flex-1'>
-                                        <Avatar className='h-10 w-10'>
+                                <div
+                                    key={suggestedUser?._id}
+                                    className='transition-smooth'
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: '10px',
+                                        padding: '10px 12px',
+                                        borderRadius: '14px',
+                                        cursor: 'pointer',
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.04)' }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                                >
+                                    <Link to={`/app/profile/${suggestedUser?._id}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, textDecoration: 'none', minWidth: 0 }}>
+                                        <Avatar className='h-10 w-10' style={{ border: '2px solid rgba(139,92,246,0.12)', flexShrink: 0 }}>
                                             <AvatarImage src={suggestedUser?.profilePicture} alt="user" />
-                                            <AvatarFallback>{suggestedUser?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                                            <AvatarFallback style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: 'white', fontSize: '13px', fontWeight: 700 }}>
+                                                {suggestedUser?.username?.[0]?.toUpperCase()}
+                                            </AvatarFallback>
                                         </Avatar>
-                                        <div className='flex-1 min-w-0'>
-                                            <p className='font-semibold text-gray-800 truncate text-sm'>{suggestedUser?.username}</p>
-                                            <p className='text-xs text-gray-500 truncate'>{suggestedUser?.followers?.length || 0} followers</p>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ fontWeight: 700, color: '#1f2937', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {suggestedUser?.username}
+                                            </p>
+                                            <p style={{ fontSize: '11px', color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {suggestedUser?.followers?.length || 0} followers
+                                            </p>
                                         </div>
                                     </Link>
 
-                                    <Button
+                                    <button
                                         onClick={() => followOrUnfollowHandler(suggestedUser?._id)}
                                         disabled={loading[suggestedUser?._id]}
-                                        className={`text-white font-semibold text-xs px-3 py-1 h-auto transition-all ${
-                                            isFollowing ? 'bg-gray-300 hover:bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'
-                                        }`}
+                                        className='transition-smooth'
+                                        style={{
+                                            padding: '6px 16px',
+                                            borderRadius: '10px',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            color: isFollowing ? '#6b7280' : 'white',
+                                            background: isFollowing
+                                                ? '#f3f4f6'
+                                                : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                                            border: 'none',
+                                            whiteSpace: 'nowrap',
+                                            boxShadow: isFollowing ? 'none' : '0 2px 8px rgba(139,92,246,0.3)',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (!isFollowing) {
+                                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(139,92,246,0.4)'
+                                                e.currentTarget.style.transform = 'translateY(-1px)'
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!isFollowing) {
+                                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(139,92,246,0.3)'
+                                                e.currentTarget.style.transform = 'translateY(0)'
+                                            }
+                                        }}
                                     >
                                         {loading[suggestedUser?._id] ? '...' : (isFollowing ? 'Following' : 'Follow')}
-                                    </Button>
+                                    </button>
                                 </div>
                             )
                         })
                     ) : (
-                        <p className='text-gray-500 text-sm text-center py-4'>
+                        <p style={{ color: '#9ca3af', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>
                             {searchTerm ? 'No users found' : 'No suggestions available'}
                         </p>
                     )}
                 </div>
             </div>
 
-            <div className='mt-12 text-xs text-gray-500 space-y-2 border-t border-gray-200 pt-4'>
-                <p>© 2024 MojMasti</p>
-                <p>Made with ❤️ for connection</p>
-                <div className='flex gap-2 text-xs'>
-                    <a href="#" className='hover:underline'>About</a>
-                    <a href="#" className='hover:underline'>Help</a>
-                    <a href="#" className='hover:underline'>Privacy</a>
-                </div>
-            </div>
+
         </div>
     )
 }

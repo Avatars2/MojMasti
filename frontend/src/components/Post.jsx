@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog'
-import { Bookmark, MessageCircle, MoreHorizontal, Share, Heart, Loader } from 'lucide-react'
+import { Bookmark, MessageCircle, MoreHorizontal, Send, Heart } from 'lucide-react'
 import { Button } from "./ui/button";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import CommentDialog from './CommentDialog'
@@ -17,15 +17,17 @@ import { Link } from 'react-router-dom'
 const Post = ({ post }) => {
     const [text, setText] = useState("");
     const [open, setOpen] = useState(false);
-    const { user } = useSelector(store => store.auth);
+    const { user, suggestedUsers } = useSelector(store => store.auth);
     const { posts } = useSelector(store => store.post);
     const [liked, setLiked] = useState(post.likes.includes(user?._id) || false);
     const [postLike, setPostLike] = useState(post.likes.length);
+    const [shareCount, setShareCount] = useState(post.shareCount || 0);
     const [comment, setComment] = useState(post.comments);
     const [bookmarked, setBookmarked] = useState(false);
     const [LikeLoading, setLikeLoading] = useState(false);
     const [commentLoading, setCommentLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [likeAnimating, setLikeAnimating] = useState(false);
     const dispatch = useDispatch();
 
     const changeEventHandler = (e) => {
@@ -40,13 +42,15 @@ const Post = ({ post }) => {
     const likeOrDislikeHandler = async () => {
         try {
             setLikeLoading(true);
-            const ACTION = liked ? 'dislike' : 'like';
-            const endpoint = liked 
+            setLikeAnimating(true);
+            setTimeout(() => setLikeAnimating(false), 350);
+
+            const endpoint = liked
                 ? API_ENDPOINTS.POST.DISLIKE(post._id)
                 : API_ENDPOINTS.POST.LIKE(post._id);
 
             const res = await axios.get(endpoint, { withCredentials: true });
-            
+
             logger.log(res.data);
             if (res.data.success) {
                 const updatedLikes = liked ? postLike - 1 : postLike + 1;
@@ -76,9 +80,9 @@ const Post = ({ post }) => {
             const res = await axios.post(
                 API_ENDPOINTS.POST.COMMENT(post._id),
                 { text },
-                { headers: { 'Content-Type': 'application/json'}, withCredentials: true }
+                { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
             );
-            
+
             logger.log(res.data);
             if (res.data.success) {
                 const updatedCommentData = [...comment, res.data.comment];
@@ -107,7 +111,7 @@ const Post = ({ post }) => {
                 API_ENDPOINTS.POST.DELETE_POST(post?._id),
                 { withCredentials: true }
             );
-            
+
             if (res.data.success) {
                 const updatedPostData = posts.filter((postItem) => postItem?._id !== post?._id);
                 dispatch(setPosts(updatedPostData));
@@ -137,119 +141,168 @@ const Post = ({ post }) => {
         }
     }
 
+    const shareHandler = async () => {
+        const shareData = {
+            title: `MojMasti Post by ${post.author?.username}`,
+            text: post.caption ? `Check out this post: "${post.caption}"` : 'Check out this post on MojMasti!',
+            url: window.location.origin
+        };
+
+        let shared = false;
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                shared = true;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error sharing:', err);
+                }
+            }
+        } else {
+            navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
+            toast.success('Link copied to clipboard!');
+            shared = true;
+        }
+
+        if (shared) {
+            try {
+                const res = await axios.get(API_ENDPOINTS.POST.SHARE(post._id), { withCredentials: true });
+                if (res.data.success) {
+                    setShareCount(res.data.shareCount);
+                }
+            } catch (err) {
+                console.error('Failed to increment share count', err);
+            }
+        }
+    }
+
     return (
-        <div className='w-full border-b border-gray-200 bg-white'>
+        <div
+            className='animate-fade-in w-full bg-white sm:rounded-[20px] sm:border border-b border-gray-100 mb-2 sm:mb-4 overflow-hidden shadow-card sm:shadow-md'
+        >
             {/* Post Header */}
-            <div className='flex items-center justify-between p-4'>
-                <Link to={`/profile/${post.author?._id}`} className='flex items-center gap-3'>
-                    <Avatar className='h-10 w-10'>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}>
+                <Link to={`/app/profile/${post.author?._id}`} style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+                    <Avatar className='h-10 w-10' style={{ border: '2px solid rgba(139,92,246,0.15)' }}>
                         <AvatarImage src={post.author?.profilePicture} alt="author" />
-                        <AvatarFallback>{post.author?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                        <AvatarFallback style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: 'white', fontSize: '13px', fontWeight: 700 }}>
+                            {post.author?.username?.[0]?.toUpperCase()}
+                        </AvatarFallback>
                     </Avatar>
-                    <div className='flex items-center gap-3'>
-                        <h1 className='font-semibold text-gray-800 text-sm'>{post.author?.username}</h1>
-                        {user?._id === post.author._id && <Badge variant="secondary" className='text-xs'>Author</Badge>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, color: '#1f2937', fontSize: '14px' }}>{post.author?.username}</span>
+                        {user?._id === post.author._id && (
+                            <span className='pill pill-brand' style={{ fontSize: '10px', padding: '2px 8px' }}>Author</span>
+                        )}
                     </div>
                 </Link>
-                
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <MoreHorizontal className='cursor-pointer text-gray-600 hover:text-gray-800 transition-colors' size={20} />
-                    </DialogTrigger>
-                    <DialogContent className="flex flex-col items-center text-sm text-center gap-4">
-                        {post?.author?._id !== user?._id && (
-                            <Button variant='ghost' className="cursor-pointer w-fit text-[#ED4956] font-bold hover:bg-red-50">
-                                Unfollow
-                            </Button>
-                        )}
 
-                        <Button variant='ghost' className="cursor-pointer w-fit hover:bg-gray-100">
-                            Add to favorites
-                        </Button>
 
-                        {user && user?._id === post?.author._id && (
-                            <Button 
-                                onClick={deletePostHandler}
-                                disabled={deleteLoading}
-                                variant='ghost' 
-                                className="cursor-pointer w-fit text-[#ED4956] hover:bg-red-50"
-                            >
-                                {deleteLoading ? 'Deleting...' : 'Delete'}
-                            </Button>
-                        )}
-                    </DialogContent>
-                </Dialog>
             </div>
 
             {/* Post Image */}
-            <div className='w-full aspect-square overflow-hidden bg-gray-100'>
+            <div style={{ width: '100%', aspectRatio: '1', overflow: 'hidden', background: '#f3f4f6' }}>
                 <img
-                    className='w-full h-full object-cover hover:opacity-95 transition-opacity'
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'opacity 0.2s ease',
+                    }}
                     src={post.image}
                     alt="post_img"
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.95' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
                 />
             </div>
 
             {/* Post Actions */}
-            <div className='flex items-center justify-between p-4'>
-                <div className='flex items-center gap-4'>
-                    {liked ? (
-                        <FaHeart 
-                            onClick={likeOrDislikeHandler} 
-                            size={24} 
-                            className='cursor-pointer text-red-600 transition-colors' 
-                        />
-                    ) : (
-                        <FaRegHeart 
-                            onClick={likeOrDislikeHandler} 
-                            size={24} 
-                            className='cursor-pointer hover:text-gray-600 transition-colors' 
-                        />
-                    )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button
+                        onClick={likeOrDislikeHandler}
+                        className={likeAnimating ? 'animate-heart-bounce' : ''}
+                        style={{ display: 'flex', alignItems: 'center', padding: '4px', gap: '6px' }}
+                    >
+                        {liked ? (
+                            <FaHeart size={22} style={{ color: '#ef4444', transition: 'color 0.2s' }} />
+                        ) : (
+                            <FaRegHeart size={22} style={{ color: '#6b7280', transition: 'color 0.2s' }} />
+                        )}
+                        <span style={{ color: liked ? '#ef4444' : '#6b7280', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s' }}>{postLike}</span>
+                    </button>
 
-                    <MessageCircle 
+                    <button
                         onClick={() => {
                             dispatch(setSelectedPost(post));
                             setOpen(true);
-                        }} 
-                        className='cursor-pointer hover:text-gray-600 transition-colors'
-                        size={24}
-                    />
-                    
-                    <Share className='cursor-pointer hover:text-gray-600 transition-colors' size={24} />
+                        }}
+                        className='transition-smooth'
+                        style={{ display: 'flex', alignItems: 'center', padding: '4px', gap: '6px' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.querySelector('svg').style.color = '#4b5563';
+                            e.currentTarget.querySelector('span').style.color = '#4b5563';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.querySelector('svg').style.color = '#6b7280';
+                            e.currentTarget.querySelector('span').style.color = '#6b7280';
+                        }}
+                    >
+                        <MessageCircle size={22} style={{ color: '#6b7280', transition: 'color 0.2s' }} />
+                        <span style={{ color: '#6b7280', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s' }}>{comment.length}</span>
+                    </button>
+
+                    <button
+                        onClick={shareHandler}
+                        className='transition-smooth'
+                        style={{ display: 'flex', alignItems: 'center', padding: '4px', gap: '6px' }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.querySelector('svg').style.color = '#4b5563';
+                            e.currentTarget.querySelector('span').style.color = '#4b5563';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.querySelector('svg').style.color = '#6b7280';
+                            e.currentTarget.querySelector('span').style.color = '#6b7280';
+                        }}
+                        title="Share"
+                    >
+                        <Send size={22} style={{ color: '#6b7280', transition: 'color 0.2s' }} />
+                        <span style={{ color: '#6b7280', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s' }}>{shareCount}</span>
+                    </button>
                 </div>
 
-                <Bookmark 
-                    onClick={bookmarkHandler} 
-                    className='cursor-pointer hover:text-yellow-500 transition-colors'
-                    size={24}
-                    fill={bookmarked ? 'currentColor' : 'none'}
-                    color={bookmarked ? '#eab308' : 'currentColor'}
-                />
+                <button
+                    onClick={bookmarkHandler}
+                    className='transition-smooth'
+                    style={{ display: 'flex', alignItems: 'center', padding: '4px' }}
+                >
+                    <Bookmark
+                        size={22}
+                        fill={bookmarked ? '#f59e0b' : 'none'}
+                        style={{ color: bookmarked ? '#f59e0b' : '#6b7280', transition: 'all 0.2s' }}
+                    />
+                </button>
             </div>
 
-            {/* Likes Count */}
-            <div className='px-4 pb-2'>
-                <span className='font-semibold text-gray-800 text-sm block'>{postLike} likes</span>
-            </div>
+
 
             {/* Caption */}
-            <div className='px-4 pb-3'>
-                <p className='text-gray-800 text-sm'>
-                    <span className='font-semibold text-gray-800'>{post.author?.username}</span>
-                    {' '}{post.caption}
+            <div style={{ padding: '0 16px 10px' }}>
+                <p style={{ color: '#374151', fontSize: '14px', lineHeight: '1.5' }}>
+                    <span style={{ fontWeight: 700, color: '#1f2937', marginRight: '6px' }}>{post.author?.username}</span>
+                    {post.caption}
                 </p>
             </div>
 
             {/* View Comments Link */}
             {comment.length > 0 && (
-                <div className='px-4 pb-3'>
-                    <span 
+                <div style={{ padding: '0 16px 10px' }}>
+                    <span
                         onClick={() => {
                             dispatch(setSelectedPost(post));
                             setOpen(true);
-                        }} 
-                        className='cursor-pointer text-sm text-gray-500 hover:text-gray-700'
+                        }}
+                        style={{ cursor: 'pointer', fontSize: '13px', color: '#9ca3af', fontWeight: 500 }}
                     >
                         View all {comment.length} comments
                     </span>
@@ -259,24 +312,7 @@ const Post = ({ post }) => {
             {/* Comment Dialog */}
             <CommentDialog open={open} setOpen={setOpen} />
 
-            {/* Add Comment Section */}
-            <div className='px-4 py-3 border-t border-gray-200 flex items-center gap-2'>
-                <input
-                    type="text"
-                    placeholder='Add a comment...'
-                    value={text}
-                    onChange={changeEventHandler}
-                    className='outline-none text-sm w-full bg-white'
-                />
-                {text && (
-                    <span 
-                        onClick={commentHandler}
-                        className='text-[#3BADF8] cursor-pointer font-semibold hover:text-[#2a95d9] transition-colors text-sm'
-                    >
-                        {commentLoading ? 'Posting...' : 'Post'}
-                    </span>
-                )}
-            </div>
+
         </div>
     )
 }

@@ -22,6 +22,14 @@ const authSlice = createSlice({
         setUserProfile: (state, action) => {
             state.userProfile = action.payload;
         },
+        addUserProfilePost: (state, action) => {
+            if (state.userProfile && state.user && state.userProfile._id === state.user._id) {
+                if (!state.userProfile.posts) {
+                    state.userProfile.posts = [];
+                }
+                state.userProfile.posts.unshift(action.payload);
+            }
+        },
         setSelectedUser: (state, action) => {
             state.selectedUser = action.payload;
         },
@@ -39,6 +47,7 @@ export const {
     setLoading,
     setSuggestedUsers,
     setUserProfile,
+    addUserProfilePost,
     setSelectedUser,
     updateFollowing,
 } = authSlice.actions;

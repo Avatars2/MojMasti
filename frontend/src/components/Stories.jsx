@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { toast } from 'sonner';
@@ -88,57 +88,138 @@ const Stories = () => {
 
     if (loading) {
         return (
-            <div className='w-full h-48 bg-gray-100 rounded-xl animate-pulse'></div>
+            <div
+                className='shadow-card w-full bg-white sm:rounded-[20px] sm:border border-b border-gray-100 mb-2 sm:mb-5 py-3 px-4 sm:px-5'
+            >
+                <div style={{ display: 'flex', gap: '16px', overflow: 'hidden' }}>
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            <div className='skeleton' style={{ width: '68px', height: '68px', borderRadius: '50%' }} />
+                            <div className='skeleton' style={{ width: '48px', height: '10px', borderRadius: '5px' }} />
+                        </div>
+                    ))}
+                </div>
+            </div>
         );
     }
 
     return (
         <>
-            <div className='w-full bg-white rounded-xl border border-gray-200 p-4 mb-6'>
-                <div className='flex gap-4 overflow-x-auto scrollbar-hide min-h-[120px]'>
+            <div
+                className='shadow-card w-full bg-white sm:rounded-[20px] sm:border border-b border-gray-100 mb-2 sm:mb-5 py-3 px-4 sm:px-5'
+            >
+                <div className='scrollbar-hide' style={{ display: 'flex', gap: '14px', overflowX: 'auto', minHeight: '100px', alignItems: 'flex-start', paddingBottom: '4px' }}>
                     {/* Add Story Button */}
-                    <div className='flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer' onClick={() => setShowCreateStory(true)}>
-                        <div className='relative w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-pink-500 to-blue-500 p-0.5 flex-shrink-0'>
-                            <div className='w-full h-full rounded-full bg-white p-0.5'>
-                                <div className='w-full h-full rounded-full bg-gray-200 flex items-center justify-center'>
-                                    <Plus className='w-6 h-6 text-gray-600' />
-                                </div>
+                    <div
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0, cursor: 'pointer' }}
+                        onClick={() => setShowCreateStory(true)}
+                    >
+                        <div style={{ position: 'relative' }}>
+                            <div
+                                style={{
+                                    width: '68px',
+                                    height: '68px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, rgba(236,72,153,0.08), rgba(139,92,246,0.10))',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2px dashed rgba(139,92,246,0.3)',
+                                    transition: 'all 0.25s ease',
+                                }}
+                                className='hover-lift'
+                            >
+                                <Plus style={{ width: '24px', height: '24px', color: '#8b5cf6' }} />
                             </div>
-                            <div className='absolute bottom-0 right-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white'>
-                                <Plus className='w-3 h-3 text-white' />
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '-2px',
+                                    right: '-2px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2.5px solid white',
+                                    boxShadow: '0 2px 6px rgba(236,72,153,0.3)',
+                                }}
+                            >
+                                <Plus style={{ width: '11px', height: '11px', color: 'white', strokeWidth: 3 }} />
                             </div>
                         </div>
-                        <span className='text-xs text-gray-600 font-medium whitespace-nowrap'>Your story</span>
+                        <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>Your story</span>
                     </div>
 
                     {/* Stories from followed users */}
                     {stories.map((storyGroup, index) => (
-                        <div 
-                            key={index} 
-                            className='flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer'
+                        <div
+                            key={index}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0, cursor: 'pointer' }}
                             onClick={() => handleStoryClick(storyGroup)}
                         >
-                            <div className='relative w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-pink-500 to-blue-500 p-0.5 flex-shrink-0'>
-                                <div className='w-full h-full rounded-full bg-white p-0.5'>
-                                    <img 
-                                        src={storyGroup.author.profilePicture || 'https://via.placeholder.com/80'} 
+                            <div className={storyGroup.hasViewed ? 'story-ring-viewed' : 'story-ring'} style={{ position: 'relative' }}>
+                                <div className='story-ring-inner'>
+                                    <img
+                                        src={storyGroup.author.profilePicture || 'https://via.placeholder.com/80'}
                                         alt={storyGroup.author.username}
-                                        className='w-full h-full rounded-full object-cover'
+                                        style={{
+                                            width: '62px',
+                                            height: '62px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                        }}
                                     />
                                 </div>
                                 {!storyGroup.hasViewed && (
-                                    <div className='absolute top-0 right-0 w-3 h-3 bg-blue-500 rounded-full border-2 border-white'></div>
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '2px',
+                                            right: '2px',
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                                            border: '2px solid white',
+                                        }}
+                                    />
                                 )}
                             </div>
-                            <span className='text-xs text-gray-600 font-medium truncate max-w-[60px] md:max-w-[80px] whitespace-nowrap'>
+                            <span style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                fontWeight: 500,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: '68px',
+                                textAlign: 'center',
+                            }}>
                                 {storyGroup.author.username}
                             </span>
                         </div>
                     ))}
 
                     {stories.length === 0 && userStories.length === 0 && (
-                        <div className='flex items-center justify-center w-full py-4 text-gray-500 text-sm'>
-                            No stories available. Create your first story!
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            padding: '12px 0',
+                        }}>
+                            <p style={{ fontSize: '13px', color: '#9ca3af', fontWeight: 500 }}>
+                                No stories available.{' '}
+                                <span
+                                    onClick={() => setShowCreateStory(true)}
+                                    style={{ color: '#8b5cf6', cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                    Create your first story!
+                                </span>
+                            </p>
                         </div>
                     )}
                 </div>
@@ -146,15 +227,15 @@ const Stories = () => {
 
             {/* Story Viewer */}
             {selectedStoryGroup && (
-                <StoryViewer 
-                    storyGroup={selectedStoryGroup} 
+                <StoryViewer
+                    storyGroup={selectedStoryGroup}
                     onClose={handleCloseViewer}
                 />
             )}
 
             {/* Create Story Dialog */}
             {showCreateStory && (
-                <CreateStory 
+                <CreateStory
                     onClose={() => setShowCreateStory(false)}
                     onStoryCreated={handleStoryCreated}
                 />

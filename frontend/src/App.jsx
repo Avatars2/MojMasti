@@ -1,13 +1,11 @@
 import { useEffect } from 'react'
-import ChatPage from './components/ChatPage'
+
 import EditProfile from './components/EditProfile'
-import MobileApp from './components/MobileApp'
 import Login from './components/Login'
 import MainLayout from './components/MainLayout'
 import Profile from './components/Profile'
 import Signup from './components/Signup'
 import MobileExplore from './components/MobileExplore'
-import MobileReels from './components/MobileReels'
 import Likes from './components/Likes'
 import Saved from './components/Saved'
 import Posts from './components/Posts'
@@ -15,7 +13,7 @@ import { createBrowserRouter, RouterProvider, useNavigate } from 'react-router-d
 import { io } from "socket.io-client";
 import { useDispatch, useSelector } from 'react-redux'
 import { setSocket } from './redux/socketSlice'
-import { setOnlineUsers } from './redux/chatSlice'
+
 import { setLikeNotification } from './redux/rtnSlice'
 import ProtectedRoutes from './components/ProtectedRoutes'
 import ErrorPage from './components/ErrorPage';
@@ -35,7 +33,7 @@ const RootRedirect = () => {
   
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
     </div>
   );
 };
@@ -63,42 +61,29 @@ const browserRouter = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        path: '',
-        element: <ProtectedRoutes><MobileApp /></ProtectedRoutes>,
-        children: [
-          {
-            index: true,
-            element: <ProtectedRoutes><Posts /></ProtectedRoutes>
-          }
-        ]
+        index: true,
+        element: <Posts />
       },
       {
-        path: '/app/profile/:id',
-        element: <ProtectedRoutes> <Profile /></ProtectedRoutes>
+        path: 'profile/:id',
+        element: <Profile />
       },
       {
-        path: '/app/account/edit',
-        element: <ProtectedRoutes><EditProfile /></ProtectedRoutes>
+        path: 'account/edit',
+        element: <EditProfile />
+      },
+
+      {
+        path: 'explore',
+        element: <MobileExplore />
       },
       {
-        path: '/app/chat',
-        element: <ProtectedRoutes><ChatPage /></ProtectedRoutes>
+        path: 'likes',
+        element: <Likes />
       },
       {
-        path: '/app/explore',
-        element: <ProtectedRoutes><MobileExplore /></ProtectedRoutes>
-      },
-      {
-        path: '/app/reels',
-        element: <ProtectedRoutes><MobileReels /></ProtectedRoutes>
-      },
-      {
-        path: '/app/likes',
-        element: <ProtectedRoutes><Likes /></ProtectedRoutes>
-      },
-      {
-        path: '/app/saved',
-        element: <ProtectedRoutes><Saved /></ProtectedRoutes>
+        path: 'saved',
+        element: <Saved />
       },
     ]
   },
@@ -119,10 +104,7 @@ function App() {
       });
       dispatch(setSocket(socketio));
 
-      // listen all the events
-      socketio.on('getOnlineUsers', (onlineUsers) => {
-        dispatch(setOnlineUsers(onlineUsers));
-      });
+
 
       socketio.on('notification', (notification) => {
         dispatch(setLikeNotification(notification));

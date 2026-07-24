@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { Readable } from "stream";
 import cloudinary from "../utils/cloudinary.js";
 import { Post } from "../models/post.model.js";
 import { User } from "../models/user.model.js";
@@ -146,12 +147,12 @@ export const addNewPost = async (req, res) => {
             });
             mediaUrl = cloudResponse.secure_url;
 
-        } else if (fileType === 'video' || fileType === 'reel') {
-            // Validate video size (100MB max for reels, 50MB for regular videos)
-            const maxSize = fileType === 'reel' ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+        } else if (fileType === 'video') {
+            // Validate video size (50MB for regular videos)
+            const maxSize = 50 * 1024 * 1024;
             if (mediaFile.size > maxSize) {
                 return res.status(400).json({ 
-                    message: `${fileType === 'reel' ? 'Reel' : 'Video'} size must be less than ${fileType === 'reel' ? '100MB' : '50MB'}`,
+                    message: `Video size must be less than 50MB`,
                     success: false 
                 });
             }
@@ -159,7 +160,7 @@ export const addNewPost = async (req, res) => {
             // Upload video directly to Cloudinary
             console.log('Uploading video to Cloudinary...');
             const cloudResponse = await cloudinary.uploader.upload_stream({
-                folder: fileType === 'reel' ? 'reels' : 'videos',
+                folder: 'videos',
                 resource_type: 'video',
                 chunk_size: 6000000
             }, (error, result) => {
@@ -171,14 +172,13 @@ export const addNewPost = async (req, res) => {
             });
 
             // Convert buffer to stream for Cloudinary
-            const bufferStream = require('stream');
-            const readableStream = new bufferStream.Readable();
+            const readableStream = new Readable();
             readableStream.push(mediaFile.buffer);
             readableStream.push(null);
 
             const uploadResult = await new Promise((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream({
-                    folder: fileType === 'reel' ? 'reels' : 'videos',
+                    folder: 'videos',
                     resource_type: 'video'
                 }, (error, result) => {
                     if (error) reject(error);
@@ -263,11 +263,6 @@ export const getAllPost = async (req, res) => {
     try {
         const { type } = req.query;
         let query = Post.find().sort({ createdAt: -1 });
-        
-        // Filter by media type if specified
-        if (type === 'reel') {
-            query = Post.find({ mediaType: 'reel' }).sort({ createdAt: -1 });
-        }
         
         const posts = await query
             .populate({ 
@@ -355,10 +350,9 @@ export const likePost = async (req, res) => {
 
         // Add like
         await post.updateOne({ $addToSet: { likes: userId } });
-        await post.save();
 
         // Get updated post with populated data
-        const updatedPost = await post.populate([
+        const updatedPost = await Post.findById(postId).populate([
             {
                 path: 'author',
                 select: 'username profilePicture'
@@ -428,10 +422,9 @@ export const dislikePost = async (req, res) => {
 
         // Remove like
         await post.updateOne({ $pull: { likes: userId } });
-        await post.save();
 
         // Get updated post with populated data
-        const updatedPost = await post.populate([
+        const updatedPost = await Post.findById(postId).populate([
             {
                 path: 'author',
                 select: 'username profilePicture'
@@ -660,7 +653,6 @@ export const bookmarkPost = async (req, res) => {
         if (isBookmarked) {
             // Remove bookmark
             await user.updateOne({ $pull: { bookmarks: postId } });
-            await user.save();
 
             return res.status(200).json({
                 message: 'Bookmark removed',
@@ -670,7 +662,6 @@ export const bookmarkPost = async (req, res) => {
         } else {
             // Add bookmark
             await user.updateOne({ $addToSet: { bookmarks: postId } });
-            await user.save();
 
             return res.status(200).json({
                 message: 'Post bookmarked',
@@ -684,6 +675,38 @@ export const bookmarkPost = async (req, res) => {
         return res.status(500).json({
             message: 'Failed to bookmark post',
             error: error.message,
+            success: false
+        });
+    }
+}
+
+// ==================== SHARE POST ====================
+export const sharePost = async (req, res) => {
+    try {
+        const postId = req.params.id;
+
+        // Find the post
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                message: 'Post not found',
+                success: false
+            });
+        }
+
+        // Increment share count
+        await post.updateOne({ $inc: { shareCount: 1 } });
+
+        return res.status(200).json({
+            message: 'Post shared',
+            shareCount: (post.shareCount || 0) + 1,
+            success: true
+        });
+
+    } catch (error) {
+        console.error('Error sharing post:', error);
+        return res.status(500).json({
+            message: 'Failed to share post',
             success: false
         });
     }

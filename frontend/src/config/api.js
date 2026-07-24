@@ -10,7 +10,9 @@ export const API_ENDPOINTS = {
     PROFILE: (userId) => `${API_BASE_URL}/api/v1/user/${userId}/profile`,
     EDIT_PROFILE: `${API_BASE_URL}/api/v1/user/profile/edit`,
     SUGGESTED: `${API_BASE_URL}/api/v1/user/suggested`,
+    SEARCH: `${API_BASE_URL}/api/v1/user/search`,
     FOLLOW: (userId) => `${API_BASE_URL}/api/v1/user/followorunfollow/${userId}`,
+    UPDATE_PASSWORD: `${API_BASE_URL}/api/v1/user/update-password`,
   },
   POST: {
     ALL: `${API_BASE_URL}/api/v1/post/all`,
@@ -24,6 +26,7 @@ export const API_ENDPOINTS = {
     GET_COMMENTS: (postId) => `${API_BASE_URL}/api/v1/post/${postId}/comment/all`,
     DELETE_POST: (postId) => `${API_BASE_URL}/api/v1/post/delete/${postId}`,
     BOOKMARK: (postId) => `${API_BASE_URL}/api/v1/post/${postId}/bookmark`,
+    SHARE: (postId) => `${API_BASE_URL}/api/v1/post/${postId}/share`,
   },
   MESSAGE: {
     GET_ALL: (conversationId) => `${API_BASE_URL}/api/v1/message/all/${conversationId}`,

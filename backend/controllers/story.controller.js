@@ -1,6 +1,7 @@
 import { Story } from '../models/story.model.js';
 import { User } from '../models/user.model.js';
-import cloudinary from 'cloudinary';
+import cloudinary from '../utils/cloudinary.js';
+import getDataUri from '../utils/datauri.js';
 
 // Create a new story
 export const createStory = async (req, res) => {
@@ -15,8 +16,9 @@ export const createStory = async (req, res) => {
             });
         }
 
-        // Upload media to Cloudinary
-        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        // Convert buffer to data URI for Cloudinary (multer memory storage)
+        const fileUri = getDataUri(req.file);
+        const result = await cloudinary.uploader.upload(fileUri, {
             resource_type: 'auto',
             folder: 'stories'
         });
@@ -53,7 +55,7 @@ export const getStories = async (req, res) => {
         
         // Get user's following list
         const user = await User.findById(userId).select('following');
-        const followingIds = user.following;
+        const followingIds = [...user.following];
         
         // Add current user to see their own stories
         followingIds.push(userId);
@@ -161,8 +163,12 @@ export const deleteStory = async (req, res) => {
         }
 
         // Delete from Cloudinary
-        const publicId = story.media.split('/').pop().split('.')[0];
-        await cloudinary.v2.uploader.destroy(`stories/${publicId}`);
+        try {
+            const publicId = story.media.split('/').pop().split('.')[0];
+            await cloudinary.uploader.destroy(`stories/${publicId}`);
+        } catch (cloudError) {
+            console.warn('Failed to delete story media from Cloudinary:', cloudError);
+        }
 
         await Story.findByIdAndDelete(storyId);
 

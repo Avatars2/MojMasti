@@ -2,7 +2,6 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import authSlice from "./authSlice.js";
 import postSlice from './postSlice.js';
 import socketSlice from "./socketSlice.js"
-import chatSlice from "./chatSlice.js";
 import rtnSlice from "./rtnSlice.js";
 
 import {
@@ -21,13 +20,13 @@ const persistConfig = {
     key: 'root',
     version: 1,
     storage,
+    blacklist: ['socketio'], // Don't persist socket — it's non-serializable
 }
 
 const rootReducer = combineReducers({
     auth: authSlice,
     post: postSlice,
     socketio: socketSlice,
-    chat: chatSlice,
     realTimeNotification: rtnSlice
 })
 
@@ -38,7 +37,8 @@ const store = configureStore({
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
-                ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+                ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER, 'socketio/setSocket'],
+                ignoredPaths: ['socketio.socket'],
             },
         }),
 });

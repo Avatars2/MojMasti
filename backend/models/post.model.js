@@ -4,10 +4,11 @@ const postSchema = new mongoose.Schema({
     caption: { type: String, default: '' },
     image: { type: String },
     video: { type: String },
-    mediaType: { type: String, enum: ['image', 'video', 'reel'], required: true },
+    mediaType: { type: String, enum: ['image', 'video'], required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+    shareCount: { type: Number, default: 0 },
     duration: { type: Number, default: 0 }, // for videos in seconds
     thumbnail: { type: String }, // for video thumbnails
     tags: [{ type: String }], // for discoverability
